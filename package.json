@@ -1,0 +1,35 @@
+{
+  "name": "empires-hand",
+  "version": "1.0.0",
+  "description": "A card game inspired by Age of Empires. Real-time strategy meets deckbuilding, playable on phone, tablet, and desktop.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hopskotchradio/empires-hand.git"
+  },
+  "keywords": ["game", "card-game", "strategy", "rts"],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hopskotchradio/empires-hand/issues"
+  },
+  "homepage": "https://github.com/hopskotchradio/empires-hand#readme",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vitest": "^1.1.0"
+  }
+}
