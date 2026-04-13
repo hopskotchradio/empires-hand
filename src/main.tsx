@@ -1,15 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Board } from './components/Board';
+import { createGame, createPlayer } from './game/engine';
+import { greeks, norse } from './game/cards';
 
-// Placeholder - will be replaced with actual game component
+// Create a demo game
+const player1 = createPlayer('p1', greeks);
+const player2 = createPlayer('p2', norse);
+const gameState = createGame([player1, player2]);
+
 const App = () => (
-  <div style={{ padding: 40, textAlign: 'center' }}>
-    <h1>🏛️ Empire's Hand</h1>
-    <p>A card game inspired by Age of Empires</p>
-    <p style={{ marginTop: 20, opacity: 0.7 }}>
-      Greeks vs Norse coming soon...
-    </p>
-  </div>
+  <Board gameState={gameState} currentPlayerId="p1" />
 );
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
