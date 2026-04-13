@@ -160,6 +160,52 @@ Multiple paths to victory keeps games dynamic:
 | **Diplomatic** | Ally with neutral factions, achieve influence threshold |
 | **Domination** | Control majority of map objectives simultaneously |
 
+## Visual Design: Cards vs. Sprites
+
+### The Split
+
+| Element | Format | Purpose |
+|---------|--------|---------|
+| **Cards** | 2D illustrated | Deckbuilding, hand management, strategic planning |
+| **Battlefield Units** | Isometric 3D sprites | Emotional attachment, cosmetic chase, "toy factor" |
+
+### How It Works
+
+- Cards in your hand/piles show **illustrated 2D art**
+- When deployed, units appear as **isometric sprites** on the grid
+- Hover a card to see detailed stats, abilities, lore
+- Click a sprite to see its card equivalent (for opponents' units)
+
+### Cosmetic Economy (Dota 2 Model)
+
+**Earn currency by playing:**
+- Base reward per match (win or lose)
+- Win streak bonuses
+- Campaign chapter completions
+- Daily quests
+- Achievement unlocks
+
+**Spend on:**
+- Hero skins (Thunderlord Zeus, Frostborn Thor, etc.)
+- Unit variants (different sprite sets per civilization)
+- Card backs
+- Battlefield themes (terrain, weather, lighting)
+- Emotes and taunts
+- VFX upgrades (ability animations)
+
+**Rarity tiers:**
+| Tier | Visual | Audio | Example |
+|------|--------|-------|---------|
+| Common | Recolor | None | Bronze Zeus |
+| Uncommon | Model variant | None | Armored Zeus |
+| Rare | New model | New ability SFX | Stormcaller Zeus |
+| Epic | Themed set | Custom animations | Thunderlord Zeus |
+| Legendary | Custom model + anims | Full voice pack, custom VFX | Olympus Fallen Zeus |
+
+**Unit skins:** One uniform per army (AC Odyssey naval style). Your entire Greek force shares the same visual theme.
+
+**Fog rule:** Cosmetics NEVER reveal intel. Enemy sees default sprites until revealed.
+
 ## Deckbuilding & Progression
 
 ### Complexity Target
@@ -189,7 +235,7 @@ Depth comes from decision-making, not card text length.
 
 - Card packs (gold / premium currency)
 - Hero unlocks
-- Cosmetics (card backs, battlefield skins, emotes)
+- Cosmetics (card backs, battlefield skins, emotes, **hero skins**, **unit sprite sets**)
 - Battle Pass for seasonal content
 
 ## Game Loop
@@ -279,6 +325,35 @@ Each turn you get X Command Points. Spend them to:
 
 Creates tension: do I draw more options or execute what I have?
 
+## Visual Style
+
+**Target:** Simple yet stylized. Not AoE's historical realism. Not Hades' hand-painted flair. Something in between.
+
+**Reference:** Dota Underlords — readable silhouettes, expressive animations, runs on mobile.
+
+**Principles:**
+- Silhouettes read at small sizes
+- Color coding by civilization
+- Animations telegraph gameplay (wind-up before attack, etc.)
+- Performance first — 60fps on mid-tier phones
+
+## Technical Architecture
+
+### Rendering Layers
+
+```
+Layer 4: VFX (abilities, impacts, particles)
+Layer 3: Sprites (units, heroes, animated)
+Layer 2: Grid/terrain (static, themeable)
+Layer 1: UI overlay (cards, HUD, menus)
+```
+
+### Asset Pipeline
+
+- Sprites: 2.5D isometric renders from 3D models
+- Cards: Illustrated 2D art (separate from sprites)
+- Themes: Swappable texture packs for terrain, UI
+
 ## Open Questions
 
 - [x] Hand size and card draw mechanics? → **Three-pile system, 5 card hand**
@@ -288,6 +363,7 @@ Creates tension: do I draw more options or execute what I have?
 - [ ] How many heroes per civilization at launch?
 - [ ] F2P economy balance — grind vs. pay?
 - [ ] Async multiplayer? (play-by-mail style for longer games)
+- [ ] Sprite tech — PixiJS? Three.js (ortho)? CSS transforms?
 - [ ] Fog of War reveal duration — permanent until rescouted? Fade after N turns?
 
 ---
