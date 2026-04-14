@@ -7,7 +7,7 @@ interface BoardProps {
   currentPlayerId: string;
 }
 
-// Layout: 3 fog zones | 5x5 Grid | 3 fog zones
+// Layout: Large Hero Top | 3 fog | 5x5 Grid | 3 fog | Large Hero Bottom
 // Middle row (row 2) is the control lane
 const GRID_SIZE = 5;
 const CONTROL_LANE_ROW = 2;
@@ -79,8 +79,20 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   return (
     <div style={styles.container}>
-      {/* Opponent Area (Top) */}
-      <PlayerArea player={opponent} position="top" />
+      {/* Top Hero Area */}
+      <div style={styles.heroSection}>
+        <HeroCard 
+          hero={opponent.hero} 
+          level={opponent.heroLevel}
+          position="top"
+        />
+        {/* Top Deck Piles */}
+        <div style={styles.deckArea}>
+          <DeckPile name="Forces" color="#c44" />
+          <DeckPile name="Industry" color="#4a4" />
+          <DeckPile name="Knowledge" color="#44c" />
+        </div>
+      </div>
 
       {/* Battlefield */}
       <div style={styles.battlefield}>
@@ -125,8 +137,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           </div>
           <SpriteLayer
             units={units}
-            width={250}
-            height={250}
+            width={350}
+            height={350}
             onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
             draggedUnit={draggedUnit}
           />
@@ -140,85 +152,59 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
         </div>
       </div>
 
-      {/* Current Player Area (Bottom) */}
-      <PlayerArea 
-        player={currentPlayer} 
-        position="bottom" 
-        onDragStart={handleDragStart}
-      />
-    </div>
-  );
-};
-
-interface PlayerAreaProps {
-  player: PlayerState;
-  position: 'top' | 'bottom';
-  onDragStart?: (unitId: string, e: React.DragEvent) => void;
-}
-
-const PlayerArea: React.FC<PlayerAreaProps> = ({ player, position, onDragStart }) => {
-  const isTop = position === 'top';
-  const isCurrentPlayer = position === 'bottom';
-
-  return (
-    <div style={{ ...styles.playerArea, flexDirection: isTop ? 'row' : 'row-reverse' }}>
-      {/* Deck Piles */}
-      <div style={styles.deckArea}>
-        <div style={styles.pileLabel}>3 PILES</div>
-        <div style={styles.piles}>
+      {/* Bottom Hero Area */}
+      <div style={styles.heroSection}>
+        <HeroCard 
+          hero={currentPlayer.hero} 
+          level={currentPlayer.heroLevel}
+          position="bottom"
+          draggable
+          onDragStart={(e) => handleDragStart(`${currentPlayer.hero.id}-1`, e)}
+        />
+        {/* Bottom Deck Piles */}
+        <div style={styles.deckArea}>
           <DeckPile name="Forces" color="#c44" />
           <DeckPile name="Industry" color="#4a4" />
           <DeckPile name="Knowledge" color="#44c" />
         </div>
       </div>
+    </div>
+  );
+};
 
-      {/* Units Area */}
-      <div style={styles.unitsArea}>
-        <div style={styles.unitGroup}>
-          <div style={styles.groupLabel}>ACTIVE</div>
-          <div style={styles.cardSlots}>
-            {player.deployed.map((card, i) => (
-              <CardSlot key={i} card={card} />
-            ))}
-            {Array.from({ length: Math.max(0, 6 - player.deployed.length) }).map((_, i) => (
-              <CardSlot key={`empty-active-${i}`} />
-            ))}
-          </div>
+interface HeroCardProps {
+  hero: Card;
+  level: number;
+  position: 'top' | 'bottom';
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+}
+
+const HeroCard: React.FC<HeroCardProps> = ({ hero, level, position, draggable, onDragStart }) => {
+  const isBottom = position === 'bottom';
+
+  return (
+    <div style={styles.heroCardContainer}>
+      <div 
+        style={{
+          ...styles.heroCard,
+          cursor: draggable ? 'grab' : 'default',
+        }}
+        draggable={draggable}
+        onDragStart={onDragStart}
+      >
+        <div style={styles.heroImagePlaceholder}>
+          <span style={styles.heroInitial}>{hero.name[0]}</span>
         </div>
-        <div style={styles.unitGroup}>
-          <div style={styles.groupLabel}>FOGGED</div>
-          <div style={styles.cardSlots}>
-            {player.fogReserves.map((card, i) => (
-              <CardSlot key={i} card={card} fogged />
-            ))}
-            {Array.from({ length: Math.max(0, 3 - player.fogReserves.length) }).map((_, i) => (
-              <CardSlot key={`empty-fog-${i}`} fogged />
-            ))}
-          </div>
-        </div>
+        <div style={styles.heroNameLarge}>{hero.name}</div>
+        <div style={styles.heroLevelLarge}>Level {level}</div>
+        {draggable && <div style={styles.dragHint}>Drag to move</div>}
       </div>
-
-      {/* Hero - Draggable for current player */}
-      <div style={styles.heroArea}>
-        <div 
-          style={{
-            ...styles.heroCard,
-            cursor: isCurrentPlayer ? 'grab' : 'default',
-          }}
-          draggable={isCurrentPlayer}
-          onDragStart={(e) => onDragStart?.(`${player.hero.id}-1`, e)}
-        >
-          <div style={styles.heroName}>{player.hero.name}</div>
-          <div style={styles.heroLevel}>Lv.{player.heroLevel}</div>
-          {isCurrentPlayer && <div style={styles.dragHint}>↔ Drag</div>}
-        </div>
-      </div>
-
-      {/* Tech Panel */}
-      <div style={styles.techPanel}>
-        <div style={styles.techLabel}>TECH TREE</div>
-        <div style={styles.techLabel}>RESEARCH</div>
-        <div style={styles.techLabel}>UNITS</div>
+      
+      {/* Side panels */}
+      <div style={styles.sidePanel}>
+        <div style={styles.sideLabel}>TECH</div>
+        <div style={styles.sideLabel}>UNITS</div>
       </div>
     </div>
   );
@@ -227,16 +213,6 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, position, onDragStart }
 const DeckPile: React.FC<{ name: string; color: string }> = ({ name, color }) => (
   <div style={{ ...styles.pile, backgroundColor: color }}>
     <span style={styles.pileText}>{name}</span>
-  </div>
-);
-
-const CardSlot: React.FC<{ card?: Card; fogged?: boolean }> = ({ card, fogged }) => (
-  <div style={{ ...styles.cardSlot, opacity: fogged ? 0.6 : 1 }}>
-    {card ? (
-      <div style={styles.miniCard}>
-        <div style={styles.miniCardName}>{card.name}</div>
-      </div>
-    ) : null}
   </div>
 );
 
@@ -250,37 +226,91 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'system-ui, sans-serif',
     overflow: 'hidden',
   },
-  playerArea: {
+  heroSection: {
     display: 'flex',
-    padding: '8px 16px',
-    gap: 16,
+    justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 120,
+    gap: 20,
+    padding: '12px 24px',
+    minHeight: 140,
+  },
+  heroCardContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  heroCard: {
+    width: 140,
+    height: 110,
+    backgroundColor: '#3a2a1a',
+    borderRadius: 10,
+    border: '3px solid #8a6a4a',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+    userSelect: 'none',
+  },
+  heroImagePlaceholder: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#2a1a0a',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    border: '2px solid #6a5a4a',
+  },
+  heroInitial: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#daa',
+  },
+  heroNameLarge: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#e0c090',
+    textAlign: 'center',
+  },
+  heroLevelLarge: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+  },
+  dragHint: {
+    fontSize: 9,
+    color: '#666',
+    marginTop: 4,
+  },
+  sidePanel: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  sideLabel: {
+    fontSize: 10,
+    color: '#7ac',
+    textTransform: 'uppercase',
+    padding: '4px 8px',
+    backgroundColor: '#1a2a4a',
+    borderRadius: 4,
+    border: '1px solid #4a7ac4',
   },
   deckArea: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pileLabel: {
-    fontSize: 9,
-    color: '#888',
-    textTransform: 'uppercase',
-  },
-  piles: {
-    display: 'flex',
     gap: 6,
   },
   pile: {
-    width: 44,
-    height: 60,
-    borderRadius: 5,
+    width: 70,
+    height: 28,
+    borderRadius: 4,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 8,
-    textAlign: 'center',
+    fontSize: 10,
     boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
   },
   pileText: {
@@ -288,124 +318,28 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 'bold',
     textShadow: '0 1px 2px rgba(0,0,0,0.5)',
   },
-  unitsArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-    flex: 1,
-  },
-  unitGroup: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  groupLabel: {
-    fontSize: 9,
-    color: '#888',
-    width: 50,
-    textAlign: 'right',
-  },
-  cardSlots: {
-    display: 'flex',
-    gap: 4,
-  },
-  cardSlot: {
-    width: 44,
-    height: 60,
-    backgroundColor: '#2a2a4a',
-    borderRadius: 5,
-    border: '2px dashed #444',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniCard: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#3a3a5c',
-    borderRadius: 3,
-    padding: 3,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  miniCardName: {
-    fontSize: 7,
-    textAlign: 'center',
-    color: '#ccc',
-  },
-  heroArea: {
-    display: 'flex',
-    alignItems: 'center',
-  },
-  heroCard: {
-    width: 70,
-    height: 95,
-    backgroundColor: '#4a3a2a',
-    borderRadius: 6,
-    border: '2px solid #8a7a5a',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 3px 10px rgba(0,0,0,0.4)',
-    userSelect: 'none',
-  },
-  heroName: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#daa',
-    textAlign: 'center',
-  },
-  heroLevel: {
-    fontSize: 9,
-    color: '#888',
-    marginTop: 3,
-  },
-  dragHint: {
-    fontSize: 7,
-    color: '#666',
-    marginTop: 3,
-  },
-  techPanel: {
-    width: 100,
-    height: 95,
-    backgroundColor: '#1a2a4a',
-    border: '2px solid #4a7ac4',
-    borderRadius: 6,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-  },
-  techLabel: {
-    fontSize: 8,
-    color: '#7ac',
-    textTransform: 'uppercase',
-  },
   battlefield: {
     flex: 1,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
-    padding: '0 16px',
+    gap: 16,
+    padding: '8px 24px',
     minHeight: 0,
   },
   fogContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
-    width: 50,
+    gap: 6,
+    width: 70,
+    height: 280,
   },
   fogZone: {
     flex: 1,
-    minHeight: 60,
     backgroundColor: '#0a0a1a',
-    borderRadius: 4,
+    borderRadius: 6,
     border: '1px solid #1a1a2a',
-    opacity: 0.5,
+    opacity: 0.6,
   },
   gridContainer: {
     position: 'relative',
@@ -415,20 +349,20 @@ const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 3,
-    padding: 8,
+    gap: 4,
+    padding: 10,
     backgroundColor: '#222',
-    borderRadius: 6,
+    borderRadius: 8,
   },
   row: {
     display: 'flex',
-    gap: 3,
-    borderRadius: 3,
+    gap: 4,
+    borderRadius: 4,
   },
   cell: {
-    width: 42,
-    height: 42,
-    borderRadius: 3,
+    width: 58,
+    height: 58,
+    borderRadius: 4,
     transition: 'all 0.2s',
   },
 };
