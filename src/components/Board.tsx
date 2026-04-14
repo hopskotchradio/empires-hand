@@ -7,11 +7,10 @@ interface BoardProps {
   currentPlayerId: string;
 }
 
-// New grid layout: 3x3 Fog | 5x5 Grid | 3x3 Fog
-const FOG_SIZE = 3;
-const GRID_SIZE = 5;
-const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 11
-const TOTAL_ROWS = GRID_SIZE; // 5
+// Grid layout: 6x6 playable area
+const GRID_SIZE = 6;
+const TOTAL_COLS = GRID_SIZE;
+const TOTAL_ROWS = GRID_SIZE;
 
 export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId);
@@ -21,8 +20,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   // Track unit positions with state for dragging
   const [unitPositions, setUnitPositions] = useState({
-    'zeus-1': { x: 2, y: 4 }, // Bottom area of 5x5 grid
-    'thor-1': { x: 2, y: 0 }, // Top area of 5x5 grid
+    'zeus-1': { x: 2, y: 5 }, // Bottom area of 6x6 grid
+    'thor-1': { x: 3, y: 0 }, // Top area of 6x6 grid
   });
 
   const [draggedUnit, setDraggedUnit] = useState<string | null>(null);
@@ -32,7 +31,7 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     {
       id: 'zeus-1',
       card: { ...currentPlayer.hero, id: 'zeus' },
-      gridX: unitPositions['zeus-1'].x + FOG_SIZE, // Offset by left fog
+      gridX: unitPositions['zeus-1'].x,
       gridY: unitPositions['zeus-1'].y,
       isHero: true,
       canMove: true,
@@ -40,7 +39,7 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     {
       id: 'thor-1', 
       card: { ...opponent.hero, id: 'thor' },
-      gridX: unitPositions['thor-1'].x + FOG_SIZE,
+      gridX: unitPositions['thor-1'].x,
       gridY: unitPositions['thor-1'].y,
       isHero: true,
       canMove: false, // Opponent units can't be moved by current player
@@ -63,12 +62,12 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     e.preventDefault();
     if (!draggedUnit) return;
 
-    // Check bounds (must be within 5x5 grid, not fog)
-    if (gridX < FOG_SIZE || gridX >= FOG_SIZE + GRID_SIZE) return;
+    // Check bounds (must be within 6x6 grid)
+    if (gridX < 0 || gridX >= GRID_SIZE || gridY < 0 || gridY >= GRID_SIZE) return;
 
     setUnitPositions(prev => ({
       ...prev,
-      [draggedUnit]: { x: gridX - FOG_SIZE, y: gridY }
+      [draggedUnit]: { x: gridX, y: gridY }
     }));
     setDraggedUnit(null);
   }, [draggedUnit]);
@@ -85,28 +84,22 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
       {/* Battlefield */}
       <div style={styles.battlefield}>
-        {/* Left Fog Zone */}
-        <FogZone side="left" />
-
         {/* Main Grid */}
         <div style={styles.gridContainer}>
           <div style={styles.grid}>
             {Array.from({ length: TOTAL_ROWS }).map((_, row) => (
               <div key={row} style={styles.row}>
                 {Array.from({ length: TOTAL_COLS }).map((_, col) => {
-                  const isFog = col < FOG_SIZE || col >= FOG_SIZE + GRID_SIZE;
-                  const isGrid = !isFog;
-                  const isValidDrop = isGrid && draggedUnit !== null;
+                  const isValidDrop = draggedUnit !== null;
 
                   return (
                     <div
                       key={`${row}-${col}`}
                       style={{
                         ...styles.cell,
-                        backgroundColor: isFog ? '#0a0a1a' : '#2a2a4a',
-                        border: isFog ? '1px solid #1a1a2a' : '1px solid #444',
+                        backgroundColor: '#2a2a4a',
+                        border: '1px solid #444',
                         cursor: isValidDrop ? 'copy' : 'default',
-                        opacity: isFog ? 0.5 : 1,
                       }}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(col, row, e)}
@@ -119,14 +112,11 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           <SpriteLayer
             units={units}
             width={500}
-            height={250}
+            height={300}
             onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
             draggedUnit={draggedUnit}
           />
         </div>
-
-        {/* Right Fog Zone */}
-        <FogZone side="right" />
       </div>
 
       {/* Current Player Area (Bottom) */}
@@ -212,15 +202,6 @@ const PlayerArea: React.FC<PlayerAreaProps> = ({ player, position, onDragStart }
     </div>
   );
 };
-
-const FogZone: React.FC<{ side: 'left' | 'right' }> = ({ side }) => (
-  <div style={{
-    ...styles.fogZone,
-    [side]: 0,
-  }}>
-    FOG
-  </div>
-);
 
 const DeckPile: React.FC<{ name: string; color: string }> = ({ name, color }) => (
   <div style={{ ...styles.pile, backgroundColor: color }}>
