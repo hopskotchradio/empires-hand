@@ -19,10 +19,11 @@ interface SpriteLayerProps {
   draggedUnit?: string | null;
 }
 
-// Grid config: 6x6
+// Grid config: 3x3 Fog | 6x6 Grid | 3x3 Fog = 12x6
+const FOG_SIZE = 3;
 const GRID_SIZE = 6;
-const TOTAL_COLS = GRID_SIZE;
-const TOTAL_ROWS = GRID_SIZE;
+const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 12
+const TOTAL_ROWS = GRID_SIZE; // 6
 
 const TILE_WIDTH = 60;
 const TILE_HEIGHT = 50;

@@ -7,10 +7,11 @@ interface BoardProps {
   currentPlayerId: string;
 }
 
-// Grid layout: 6x6 playable area
+// Grid layout: 3x3 Fog | 6x6 Grid | 3x3 Fog
+const FOG_SIZE = 3;
 const GRID_SIZE = 6;
-const TOTAL_COLS = GRID_SIZE;
-const TOTAL_ROWS = GRID_SIZE;
+const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 12
+const TOTAL_ROWS = GRID_SIZE; // 6
 
 export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
   const currentPlayer = gameState.players.find(p => p.id === currentPlayerId);
@@ -18,20 +19,20 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   if (!currentPlayer || !opponent) return null;
 
-  // Track unit positions with state for dragging
+  // Track unit positions with state for dragging (positions within the 6x6 grid)
   const [unitPositions, setUnitPositions] = useState({
-    'zeus-1': { x: 2, y: 5 }, // Bottom area of 6x6 grid
-    'thor-1': { x: 3, y: 0 }, // Top area of 6x6 grid
+    'zeus-1': { x: 2, y: 5 }, // Bottom area
+    'thor-1': { x: 3, y: 0 }, // Top area
   });
 
   const [draggedUnit, setDraggedUnit] = useState<string | null>(null);
 
-  // Convert to unit format for SpriteLayer
+  // Convert to unit format for SpriteLayer (add FOG_SIZE offset for rendering)
   const units = useMemo(() => [
     {
       id: 'zeus-1',
       card: { ...currentPlayer.hero, id: 'zeus' },
-      gridX: unitPositions['zeus-1'].x,
+      gridX: unitPositions['zeus-1'].x + FOG_SIZE,
       gridY: unitPositions['zeus-1'].y,
       isHero: true,
       canMove: true,
@@ -39,10 +40,10 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     {
       id: 'thor-1', 
       card: { ...opponent.hero, id: 'thor' },
-      gridX: unitPositions['thor-1'].x,
+      gridX: unitPositions['thor-1'].x + FOG_SIZE,
       gridY: unitPositions['thor-1'].y,
       isHero: true,
-      canMove: false, // Opponent units can't be moved by current player
+      canMove: false,
     },
   ], [currentPlayer.hero, opponent.hero, unitPositions]);
 
@@ -57,12 +58,12 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     e.dataTransfer.effectAllowed = 'move';
   }, [units]);
 
-  // Handle drop on grid cell
+  // Handle drop on grid cell (gridX is already 0-5 within the playable area)
   const handleDrop = useCallback((gridX: number, gridY: number, e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedUnit) return;
 
-    // Check bounds (must be within 6x6 grid)
+    // Check bounds (must be within 6x6 playable grid)
     if (gridX < 0 || gridX >= GRID_SIZE || gridY < 0 || gridY >= GRID_SIZE) return;
 
     setUnitPositions(prev => ({
@@ -84,25 +85,30 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
       {/* Battlefield */}
       <div style={styles.battlefield}>
-        {/* Main Grid */}
+        {/* Main Grid with Fog Zones */}
         <div style={styles.gridContainer}>
           <div style={styles.grid}>
             {Array.from({ length: TOTAL_ROWS }).map((_, row) => (
               <div key={row} style={styles.row}>
                 {Array.from({ length: TOTAL_COLS }).map((_, col) => {
-                  const isValidDrop = draggedUnit !== null;
+                  const isLeftFog = col < FOG_SIZE;
+                  const isRightFog = col >= FOG_SIZE + GRID_SIZE;
+                  const isFog = isLeftFog || isRightFog;
+                  const isGrid = !isFog;
+                  const isValidDrop = isGrid && draggedUnit !== null;
 
                   return (
                     <div
                       key={`${row}-${col}`}
                       style={{
                         ...styles.cell,
-                        backgroundColor: '#2a2a4a',
-                        border: '1px solid #444',
+                        backgroundColor: isFog ? '#0a0a1a' : '#2a2a4a',
+                        border: isFog ? '1px solid #1a1a2a' : '1px solid #444',
                         cursor: isValidDrop ? 'copy' : 'default',
+                        opacity: isFog ? 0.3 : 1,
                       }}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(col, row, e)}
+                      onDragOver={isGrid ? handleDragOver : undefined}
+                      onDrop={isGrid ? (e) => handleDrop(col - FOG_SIZE, row, e) : undefined}
                     />
                   );
                 })}
@@ -111,8 +117,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           </div>
           <SpriteLayer
             units={units}
-            width={500}
-            height={300}
+            width={600}
+            height={350}
             onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
             draggedUnit={draggedUnit}
           />
