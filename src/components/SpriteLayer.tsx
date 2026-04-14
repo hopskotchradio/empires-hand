@@ -25,7 +25,7 @@ const GRID_SIZE = 6;
 const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 12
 const TOTAL_ROWS = GRID_SIZE; // 6
 
-const TILE_SIZE = 40; // Square cells, smaller for mobile
+const TILE_SIZE = 28; // Compact square cells for desktop
 
 // Sprite sheet config
 const SHEET_COLS = 5;

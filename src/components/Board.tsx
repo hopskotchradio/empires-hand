@@ -117,8 +117,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           </div>
           <SpriteLayer
             units={units}
-            width={550}
-            height={280}
+            width={400}
+            height={200}
             onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
             draggedUnit={draggedUnit}
           />
@@ -398,22 +398,22 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: 2,
-    padding: 10,
+    gap: 1,
+    padding: 6,
     backgroundColor: '#222',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   row: {
     display: 'flex',
-    gap: 2,
+    gap: 1,
     flex: 1,
   },
   cell: {
     flex: 1,
     borderRadius: 2,
     aspectRatio: '1 / 1',
-    minHeight: 30,
-    minWidth: 30,
+    minHeight: 22,
+    minWidth: 22,
     transition: 'all 0.2s',
   },
 };
