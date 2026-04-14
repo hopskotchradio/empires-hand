@@ -19,13 +19,12 @@ interface SpriteLayerProps {
   draggedUnit?: string | null;
 }
 
-// Grid config: 3 fog | 5x5 Grid | 3 fog = 11x5
-const FOG_COLS = 3;
+// Grid config: 5x5 Grid
 const GRID_SIZE = 5;
-const TOTAL_COLS = FOG_COLS + GRID_SIZE + FOG_COLS; // 11
-const TOTAL_ROWS = GRID_SIZE; // 5
+const TOTAL_COLS = GRID_SIZE;
+const TOTAL_ROWS = GRID_SIZE;
 
-const TILE_SIZE = 28; // Compact square cells for desktop
+const TILE_SIZE = 42; // Square cells to match CSS
 
 // Sprite sheet config
 const SHEET_COLS = 5;
