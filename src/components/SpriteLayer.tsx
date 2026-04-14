@@ -156,18 +156,25 @@ async function createUnitSprite(
   let sprite: Sprite;
 
   try {
-    const texturePath = `/sprites/${unit.card.id}-idle.png`;
-    const texture = await Assets.load(texturePath).catch(() => null);
+    const texturePath = `${window.location.origin}/sprites/${unit.card.id}-idle.png`;
+    console.log('Loading texture:', texturePath);
+    const texture = await Assets.load(texturePath).catch((err) => {
+      console.log('Texture load failed:', err);
+      return null;
+    });
 
     if (texture) {
+      console.log('Texture loaded for', unit.card.name);
       sprite = new Sprite(texture);
       sprite.anchor.set(0.5, 1);
       const targetWidth = unit.isHero ? 60 : 32;
       sprite.scale.set(targetWidth / sprite.width);
     } else {
+      console.log('Using placeholder for', unit.card.name);
       sprite = createPlaceholderSprite(size, color, unit.card.name);
     }
-  } catch {
+  } catch (err) {
+    console.error('Error creating sprite:', err);
     sprite = createPlaceholderSprite(size, color, unit.card.name);
   }
 
