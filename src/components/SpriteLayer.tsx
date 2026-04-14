@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Application, Sprite, Assets, Container } from 'pixi.js';
+import React, { useEffect, useRef, useState } from 'react';
+import { Application, Sprite, Assets, Container, Texture } from 'pixi.js';
 import { Card } from '../types';
 
 interface UnitSprite {
@@ -33,38 +33,62 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
   const appRef = useRef<Application | null>(null);
   const spritesRef = useRef<Map<string, Sprite>>(new Map());
   const unitContainerRef = useRef<Container | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   // Initialize PixiJS
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
 
-    const app = new Application({
-      width,
-      height,
-      backgroundAlpha: 0, // Transparent, grid shows through
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      autoDensity: true,
-    });
+    let mounted = true;
 
-    containerRef.current.appendChild(app.canvas);
-    appRef.current = app;
+    const init = async () => {
+      try {
+        const app = new Application();
+        await app.init({
+          width,
+          height,
+          backgroundAlpha: 0,
+          antialias: true,
+          resolution: window.devicePixelRatio || 1,
+          autoDensity: true,
+        });
 
-    // Container for all units (centered)
-    const unitContainer = new Container();
-    unitContainer.x = width / 2;
-    unitContainer.y = height / 2 - 50; // Offset for isometric
-    app.stage.addChild(unitContainer);
-    unitContainerRef.current = unitContainer;
+        if (!mounted) {
+          app.destroy();
+          return;
+        }
+
+        containerRef.current?.appendChild(app.canvas);
+        appRef.current = app;
+
+        // Container for all units (centered)
+        const unitContainer = new Container();
+        unitContainer.x = width / 2;
+        unitContainer.y = height / 2 - 50;
+        app.stage.addChild(unitContainer);
+        unitContainerRef.current = unitContainer;
+
+        setIsReady(true);
+      } catch (err) {
+        console.error('Failed to initialize PixiJS:', err);
+      }
+    };
+
+    init();
 
     return () => {
-      app.destroy(true);
-      appRef.current = null;
+      mounted = false;
+      if (appRef.current) {
+        appRef.current.destroy(true);
+        appRef.current = null;
+      }
     };
   }, [width, height]);
 
   // Update sprites when units change
   useEffect(() => {
+    if (!isReady) return;
+
     const app = appRef.current;
     const container = unitContainerRef.current;
     if (!app || !container) return;
@@ -76,13 +100,11 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
       seenIds.add(unit.id);
 
       if (currentSprites.has(unit.id)) {
-        // Update position
         const sprite = currentSprites.get(unit.id)!;
         const pos = gridToIso(unit.gridX, unit.gridY);
         sprite.x = pos.x;
         sprite.y = pos.y;
       } else {
-        // Create new sprite
         createUnitSprite(unit, container, currentSprites, onUnitClick);
       }
     });
@@ -95,14 +117,23 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
         currentSprites.delete(id);
       }
     });
-  }, [units, onUnitClick]);
+  }, [units, onUnitClick, isReady]);
 
-  return <div ref={containerRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />;
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    />
+  );
 };
 
 // Convert grid coordinates to isometric screen coordinates
 function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
-  // Center the grid
   const offsetX = -(GRID_COLS * TILE_WIDTH) / 2;
   const offsetY = -(GRID_ROWS * TILE_HEIGHT) / 2;
 
@@ -112,60 +143,51 @@ function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
   };
 }
 
-// Create a unit sprite (placeholder until real assets)
+// Create a unit sprite
 async function createUnitSprite(
   unit: UnitSprite,
   container: Container,
   spritesMap: Map<string, Sprite>,
   onClick?: (unit: UnitSprite) => void
 ) {
-  // Create placeholder graphics
   const size = unit.isHero ? 40 : 24;
   const color = unit.card.type === 'hero' ? 0xffaa44 : 0x4488ff;
 
-  // Try to load actual texture, fallback to colored rectangle
   let sprite: Sprite;
 
   try {
-    // Check if we have a texture for this unit type
-    const texturePath = `/sprites/${unit.card.id}.png`;
+    const texturePath = `/sprites/${unit.card.id}-idle.png`;
     const texture = await Assets.load(texturePath).catch(() => null);
 
     if (texture) {
       sprite = new Sprite(texture);
-      sprite.anchor.set(0.5, 1); // Bottom-center anchor for isometric
-      // Scale down to fit grid - hero sprites are larger
+      sprite.anchor.set(0.5, 1);
       const targetWidth = unit.isHero ? 60 : 32;
       sprite.scale.set(targetWidth / sprite.width);
     } else {
-      // Fallback: create colored placeholder
       sprite = createPlaceholderSprite(size, color, unit.card.name);
     }
   } catch {
     sprite = createPlaceholderSprite(size, color, unit.card.name);
   }
 
-  // Position
   const pos = gridToIso(unit.gridX, unit.gridY);
   sprite.x = pos.x;
   sprite.y = pos.y;
 
-  // Interactive
   sprite.eventMode = 'static';
   sprite.cursor = 'pointer';
   sprite.on('pointerdown', () => onClick?.(unit));
 
-  // Hover effect
   sprite.on('pointerover', () => {
-    sprite.scale.set(1.1);
+    sprite.scale.set(sprite.scale.x * 1.1, sprite.scale.y * 1.1);
     sprite.alpha = 0.9;
   });
   sprite.on('pointerout', () => {
-    sprite.scale.set(1);
+    sprite.scale.set(sprite.scale.x / 1.1, sprite.scale.y / 1.1);
     sprite.alpha = 1;
   });
 
-  // Add shadow
   const shadow = createShadow(size);
   shadow.x = pos.x;
   shadow.y = pos.y + 4;
@@ -182,34 +204,24 @@ function createPlaceholderSprite(size: number, color: number, label: string): Sp
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  // Draw rounded rectangle
-  ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+  const hexColor = '#' + color.toString(16).padStart(6, '0');
+  ctx.fillStyle = hexColor;
   ctx.beginPath();
   ctx.roundRect(0, 0, size, size, 4);
   ctx.fill();
 
-  // Border
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Initial
   ctx.fillStyle = '#fff';
   ctx.font = `bold ${size / 2}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label[0], size / 2, size / 2);
 
-  const texture = Assets.cache.get(`/placeholder-${color}`);
-  if (!texture) {
-    // Create texture from canvas
-    // Note: In real Pixi, we'd use Texture.from(canvas)
-    // For now, return a simple colored sprite
-  }
-
-  // Return a Sprite with the canvas as texture
-  // This is simplified - real implementation would use proper Pixi texture management
-  const sprite = Sprite.from(canvas);
+  const texture = Texture.from(canvas);
+  const sprite = new Sprite(texture);
   sprite.anchor.set(0.5, 1);
   return sprite;
 }
@@ -226,7 +238,8 @@ function createShadow(size: number): Sprite {
   ctx.ellipse(size / 2, size / 6, size / 2, size / 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const sprite = Sprite.from(canvas);
+  const texture = Texture.from(canvas);
+  const sprite = new Sprite(texture);
   sprite.anchor.set(0.5, 0.5);
   return sprite;
 }
