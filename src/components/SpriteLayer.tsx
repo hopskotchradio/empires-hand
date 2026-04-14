@@ -194,8 +194,8 @@ async function createUnitSprite(
       animSprite = new AnimatedSprite(frames);
       animSprite.anchor.set(0.5, 1);
       
-      // Scale to target size
-      const targetWidth = unit.isHero ? 60 : 32;
+      // Scale to target size (doubled for heroes)
+      const targetWidth = unit.isHero ? 120 : 32;
       animSprite.scale.set(targetWidth / frameWidth);
       
       // Animation settings
