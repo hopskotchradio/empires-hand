@@ -7,7 +7,7 @@ interface BoardProps {
   currentPlayerId: string;
 }
 
-// Layout: Large Hero Top | 3 fog | 5x5 Grid | 3 fog | Large Hero Bottom
+// Layout: Hero Top | 3 fog | 5x5 Grid | 3 fog | Hero Bottom
 // Middle row (row 2) is the control lane
 const GRID_SIZE = 5;
 const CONTROL_LANE_ROW = 2;
@@ -18,15 +18,13 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   if (!currentPlayer || !opponent) return null;
 
-  // Track unit positions with state for dragging (positions within the 5x5 grid)
   const [unitPositions, setUnitPositions] = useState({
-    'zeus-1': { x: 2, y: 4 }, // Bottom center
-    'thor-1': { x: 2, y: 0 }, // Top center
+    'zeus-1': { x: 2, y: 4 },
+    'thor-1': { x: 2, y: 0 },
   });
 
   const [draggedUnit, setDraggedUnit] = useState<string | null>(null);
 
-  // Convert to unit format for SpriteLayer
   const units = useMemo(() => [
     {
       id: 'zeus-1',
@@ -46,7 +44,6 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     },
   ], [currentPlayer.hero, opponent.hero, unitPositions]);
 
-  // Handle drag start from hero card
   const handleDragStart = useCallback((unitId: string, e: React.DragEvent) => {
     const unit = units.find(u => u.id === unitId);
     if (!unit?.canMove) {
@@ -57,12 +54,9 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     e.dataTransfer.effectAllowed = 'move';
   }, [units]);
 
-  // Handle drop on grid cell
   const handleDrop = useCallback((gridX: number, gridY: number, e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedUnit) return;
-
-    // Check bounds (must be within 5x5 grid)
     if (gridX < 0 || gridX >= GRID_SIZE || gridY < 0 || gridY >= GRID_SIZE) return;
 
     setUnitPositions(prev => ({
@@ -79,19 +73,11 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   return (
     <div style={styles.container}>
-      {/* Top Hero Area */}
-      <div style={styles.heroSection}>
-        <HeroCard 
-          hero={opponent.hero} 
-          level={opponent.heroLevel}
-        />
-        {/* Top Deck Piles */}
-        <div style={styles.deckArea}>
-          <DeckPile name="Forces" color="#c44" />
-          <DeckPile name="Industry" color="#4a4" />
-          <DeckPile name="Knowledge" color="#44c" />
-        </div>
-      </div>
+      {/* Top Hero Section */}
+      <HeroSection 
+        hero={opponent.hero}
+        level={opponent.heroLevel}
+      />
 
       {/* Battlefield */}
       <div style={styles.battlefield}>
@@ -102,7 +88,7 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           <div style={styles.fogZone} />
         </div>
 
-        {/* Main 5x5 Grid */}
+        {/* Main 5x5 Grid - 3x bigger cells */}
         <div style={styles.gridContainer}>
           <div style={styles.grid}>
             {Array.from({ length: GRID_SIZE }).map((_, row) => (
@@ -123,7 +109,7 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
                       style={{
                         ...styles.cell,
                         backgroundColor: isControlLane ? 'rgba(200, 150, 50, 0.4)' : '#2a2a4a',
-                        border: isControlLane ? '2px solid rgba(200, 150, 50, 0.6)' : '1px solid #444',
+                        border: isControlLane ? '3px solid rgba(200, 150, 50, 0.6)' : '2px solid #444',
                         cursor: isValidDrop ? 'copy' : 'default',
                       }}
                       onDragOver={handleDragOver}
@@ -136,8 +122,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
           </div>
           <SpriteLayer
             units={units}
-            width={350}
-            height={350}
+            width={525}
+            height={525}
             onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
             draggedUnit={draggedUnit}
           />
@@ -151,36 +137,34 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
         </div>
       </div>
 
-      {/* Bottom Hero Area */}
-      <div style={styles.heroSection}>
-        <HeroCard 
-          hero={currentPlayer.hero} 
-          level={currentPlayer.heroLevel}
-          draggable
-          onDragStart={(e) => handleDragStart(`${currentPlayer.hero.id}-1`, e)}
-        />
-        {/* Bottom Deck Piles */}
-        <div style={styles.deckArea}>
-          <DeckPile name="Forces" color="#c44" />
-          <DeckPile name="Industry" color="#4a4" />
-          <DeckPile name="Knowledge" color="#44c" />
-        </div>
-      </div>
+      {/* Bottom Hero Section */}
+      <HeroSection 
+        hero={currentPlayer.hero}
+        level={currentPlayer.heroLevel}
+        draggable
+        onDragStart={(e) => handleDragStart(`${currentPlayer.hero.id}-1`, e)}
+      />
     </div>
   );
 };
 
-interface HeroCardProps {
+interface HeroSectionProps {
   hero: Card;
   level: number;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
 }
 
-const HeroCard: React.FC<HeroCardProps> = ({ hero, level, draggable, onDragStart }) => {
-
+const HeroSection: React.FC<HeroSectionProps> = ({ hero, level, draggable, onDragStart }) => {
   return (
-    <div style={styles.heroCardContainer}>
+    <div style={styles.heroSection}>
+      {/* Left side - Tech and Units (larger) */}
+      <div style={styles.leftPanel}>
+        <div style={styles.panelButton}>TECH TREE</div>
+        <div style={styles.panelButton}>UNITS</div>
+      </div>
+
+      {/* Center - Hero Portrait */}
       <div 
         style={{
           ...styles.heroCard,
@@ -196,11 +180,12 @@ const HeroCard: React.FC<HeroCardProps> = ({ hero, level, draggable, onDragStart
         <div style={styles.heroLevelLarge}>Level {level}</div>
         {draggable && <div style={styles.dragHint}>Drag to move</div>}
       </div>
-      
-      {/* Side panels */}
-      <div style={styles.sidePanel}>
-        <div style={styles.sideLabel}>TECH</div>
-        <div style={styles.sideLabel}>UNITS</div>
+
+      {/* Right side - Forces, Industry, Knowledge (bigger cards) */}
+      <div style={styles.rightPanel}>
+        <DeckPile name="FORCES" color="#c44" />
+        <DeckPile name="INDUSTRY" color="#4a4" />
+        <DeckPile name="KNOWLEDGE" color="#44c" />
       </div>
     </div>
   );
@@ -226,20 +211,33 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 20,
-    padding: '12px 24px',
-    minHeight: 140,
+    gap: 24,
+    padding: '16px 32px',
+    minHeight: 160,
   },
-  heroCardContainer: {
+  leftPanel: {
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
     gap: 12,
+    width: 100,
+  },
+  panelButton: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#7ac',
+    textTransform: 'uppercase',
+    padding: '12px 16px',
+    backgroundColor: '#1a2a4a',
+    borderRadius: 6,
+    border: '2px solid #4a7ac4',
+    textAlign: 'center',
+    cursor: 'pointer',
   },
   heroCard: {
-    width: 140,
-    height: 110,
+    width: 160,
+    height: 130,
     backgroundColor: '#3a2a1a',
-    borderRadius: 10,
+    borderRadius: 12,
     border: '3px solid #8a6a4a',
     display: 'flex',
     flexDirection: 'column',
@@ -249,91 +247,79 @@ const styles: Record<string, React.CSSProperties> = {
     userSelect: 'none',
   },
   heroImagePlaceholder: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     backgroundColor: '#2a1a0a',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
     border: '2px solid #6a5a4a',
   },
   heroInitial: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#daa',
   },
   heroNameLarge: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#e0c090',
     textAlign: 'center',
   },
   heroLevelLarge: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#888',
     marginTop: 2,
   },
   dragHint: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#666',
     marginTop: 4,
   },
-  sidePanel: {
+  rightPanel: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
-  },
-  sideLabel: {
-    fontSize: 10,
-    color: '#7ac',
-    textTransform: 'uppercase',
-    padding: '4px 8px',
-    backgroundColor: '#1a2a4a',
-    borderRadius: 4,
-    border: '1px solid #4a7ac4',
-  },
-  deckArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
+    gap: 10,
+    width: 100,
   },
   pile: {
-    width: 70,
-    height: 28,
-    borderRadius: 4,
+    width: 100,
+    height: 36,
+    borderRadius: 6,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 10,
+    fontSize: 11,
     boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
   },
   pileText: {
     color: 'white',
     fontWeight: 'bold',
     textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+    letterSpacing: 1,
   },
   battlefield: {
     flex: 1,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 16,
-    padding: '8px 24px',
+    gap: 20,
+    padding: '12px 32px',
     minHeight: 0,
   },
   fogContainer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 6,
-    width: 70,
-    height: 280,
+    gap: 8,
+    width: 100,
+    height: 420,
   },
   fogZone: {
     flex: 1,
     backgroundColor: '#0a0a1a',
-    borderRadius: 6,
+    borderRadius: 8,
     border: '1px solid #1a1a2a',
     opacity: 0.6,
   },
@@ -345,20 +331,20 @@ const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 4,
-    padding: 10,
+    gap: 6,
+    padding: 12,
     backgroundColor: '#222',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   row: {
     display: 'flex',
-    gap: 4,
-    borderRadius: 4,
+    gap: 6,
+    borderRadius: 6,
   },
   cell: {
-    width: 58,
-    height: 58,
-    borderRadius: 4,
+    width: 87,
+    height: 87,
+    borderRadius: 6,
     transition: 'all 0.2s',
   },
 };

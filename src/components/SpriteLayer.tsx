@@ -24,7 +24,7 @@ const GRID_SIZE = 5;
 const TOTAL_COLS = GRID_SIZE;
 const TOTAL_ROWS = GRID_SIZE;
 
-const TILE_SIZE = 58; // Square cells to match CSS (58px cells + 4px gap)
+const TILE_SIZE = 87; // 3x bigger cells (87px + 6px gap)
 
 // Sprite sheet config
 const SHEET_COLS = 5;
