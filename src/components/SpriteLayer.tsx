@@ -25,8 +25,7 @@ const GRID_SIZE = 6;
 const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 12
 const TOTAL_ROWS = GRID_SIZE; // 6
 
-const TILE_WIDTH = 60;
-const TILE_HEIGHT = 50;
+const TILE_SIZE = 40; // Square cells, smaller for mobile
 
 // Sprite sheet config
 const SHEET_COLS = 5;
@@ -151,12 +150,12 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
 };
 
 function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
-  const offsetX = -(TOTAL_COLS * TILE_WIDTH) / 2;
-  const offsetY = -(TOTAL_ROWS * TILE_HEIGHT) / 2;
+  const offsetX = -(TOTAL_COLS * TILE_SIZE) / 2;
+  const offsetY = -(TOTAL_ROWS * TILE_SIZE) / 2;
 
   return {
-    x: offsetX + (gridX - gridY) * (TILE_WIDTH / 2),
-    y: offsetY + (gridX + gridY) * (TILE_HEIGHT / 2),
+    x: offsetX + (gridX - gridY) * (TILE_SIZE / 2),
+    y: offsetY + (gridX + gridY) * (TILE_SIZE / 2),
   };
 }
 
