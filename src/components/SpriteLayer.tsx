@@ -99,6 +99,8 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
     const currentSprites = spritesRef.current;
     const seenIds = new Set<string>();
 
+    console.log('Rendering units:', units.map(u => ({ id: u.id, name: u.card.name, x: u.gridX, y: u.gridY })));
+    
     units.forEach((unit) => {
       seenIds.add(unit.id);
 
@@ -107,7 +109,9 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
         const pos = gridToIso(unit.gridX, unit.gridY);
         sprite.x = pos.x;
         sprite.y = pos.y;
+        console.log('Updated position for', unit.card.name, 'to', pos);
       } else {
+        console.log('Creating sprite for', unit.card.name, 'at', unit.gridX, unit.gridY);
         createUnitSprite(unit, container, currentSprites, onUnitClick);
       }
     });
