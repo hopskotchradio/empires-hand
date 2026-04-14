@@ -134,6 +134,9 @@ async function createUnitSprite(
     if (texture) {
       sprite = new Sprite(texture);
       sprite.anchor.set(0.5, 1); // Bottom-center anchor for isometric
+      // Scale down to fit grid - hero sprites are larger
+      const targetWidth = unit.isHero ? 60 : 32;
+      sprite.scale.set(targetWidth / sprite.width);
     } else {
       // Fallback: create colored placeholder
       sprite = createPlaceholderSprite(size, color, unit.card.name);
