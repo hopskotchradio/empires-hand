@@ -156,7 +156,7 @@ async function createUnitSprite(
   let sprite: Sprite;
 
   try {
-    const texturePath = `${window.location.origin}/sprites/${unit.card.id.charAt(0).toUpperCase() + unit.card.id.slice(1)}-idle.png`;
+    const texturePath = `${window.location.origin}/sprites/${unit.card.id}-idle.png`;
     console.log('Loading texture:', texturePath);
     const texture = await Assets.load(texturePath).catch((err) => {
       console.log('Texture load failed:', err);
