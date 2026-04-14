@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { GameState, PlayerState, Card } from '../types';
+import { GameState, Card } from '../types';
 import { SpriteLayer } from './SpriteLayer';
 
 interface BoardProps {
@@ -181,7 +181,6 @@ interface HeroCardProps {
 }
 
 const HeroCard: React.FC<HeroCardProps> = ({ hero, level, position, draggable, onDragStart }) => {
-  const isBottom = position === 'bottom';
 
   return (
     <div style={styles.heroCardContainer}>
