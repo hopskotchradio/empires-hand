@@ -13,7 +13,12 @@
     "type": "git",
     "url": "git+https://github.com/hopskotchradio/empires-hand.git"
   },
-  "keywords": ["game", "card-game", "strategy", "rts"],
+  "keywords": [
+    "game",
+    "card-game",
+    "strategy",
+    "rts"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
@@ -21,6 +26,7 @@
   },
   "homepage": "https://github.com/hopskotchradio/empires-hand#readme",
   "dependencies": {
+    "pixi.js": "^8.17.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

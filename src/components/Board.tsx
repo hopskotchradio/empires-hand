@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { GameState, PlayerState, Card } from '../types';
+import { SpriteLayer } from './SpriteLayer';
 
 interface BoardProps {
   gameState: GameState;
@@ -15,6 +16,24 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 
   if (!currentPlayer || !opponent) return null;
 
+  // Demo units for testing - replace with actual game state
+  const units = useMemo(() => [
+    {
+      id: 'zeus-1',
+      card: { ...currentPlayer.hero, id: 'zeus' },
+      gridX: 3,
+      gridY: 6,
+      isHero: true,
+    },
+    {
+      id: 'thor-1', 
+      card: { ...opponent.hero, id: 'thor' },
+      gridX: 10,
+      gridY: 1,
+      isHero: true,
+    },
+  ], [currentPlayer.hero, opponent.hero]);
+
   return (
     <div style={styles.container}>
       {/* Opponent Area (Top) */}
@@ -25,22 +44,30 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
         {/* Fog Zones (Left/Right edges) */}
         <div style={styles.fogZoneLeft}>FOG</div>
         
-        {/* Main Grid */}
-        <div style={styles.grid}>
-          {Array.from({ length: GRID_ROWS }).map((_, row) => (
-            <div key={row} style={styles.row}>
-              {Array.from({ length: GRID_COLS }).map((_, col) => (
-                <div
-                  key={`${row}-${col}`}
-                  style={{
-                    ...styles.cell,
-                    backgroundColor: row === 3 ? '#3a3a5c' : '#2a2a4a',
-                    borderTop: row === 4 ? '3px solid #666' : '1px solid #444',
-                  }}
-                />
-              ))}
-            </div>
-          ))}
+        {/* Main Grid with Sprite Layer */}
+        <div style={styles.gridContainer}>
+          <div style={styles.grid}>
+            {Array.from({ length: GRID_ROWS }).map((_, row) => (
+              <div key={row} style={styles.row}>
+                {Array.from({ length: GRID_COLS }).map((_, col) => (
+                  <div
+                    key={`${row}-${col}`}
+                    style={{
+                      ...styles.cell,
+                      backgroundColor: row === 3 ? '#3a3a5c' : '#2a2a4a',
+                      borderTop: row === 4 ? '3px solid #666' : '1px solid #444',
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+          <SpriteLayer
+            units={units}
+            width={600}
+            height={300}
+            onUnitClick={(unit) => console.log('Clicked:', unit.card.name)}
+          />
         </div>
 
         <div style={styles.fogZoneRight}>FOG</div>
@@ -302,6 +329,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     fontWeight: 'bold',
     letterSpacing: 4,
+  },
+  gridContainer: {
+    flex: 1,
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
   },
   grid: {
     flex: 1,
