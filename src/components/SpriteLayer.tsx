@@ -8,6 +8,7 @@ interface UnitSprite {
   gridX: number;
   gridY: number;
   isHero?: boolean;
+  canMove?: boolean;
 }
 
 interface SpriteLayerProps {
@@ -15,13 +16,17 @@ interface SpriteLayerProps {
   width: number;
   height: number;
   onUnitClick?: (unit: UnitSprite) => void;
+  draggedUnit?: string | null;
 }
 
-// Isometric projection constants
-const TILE_WIDTH = 48;
-const TILE_HEIGHT = 24;
-const GRID_COLS = 14;
-const GRID_ROWS = 8;
+// Grid config: 3 fog + 5 grid + 3 fog = 11 cols, 5 rows
+const FOG_SIZE = 3;
+const GRID_SIZE = 5;
+const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE;
+const TOTAL_ROWS = GRID_SIZE;
+
+const TILE_WIDTH = 60;
+const TILE_HEIGHT = 50;
 
 // Sprite sheet config
 const SHEET_COLS = 5;
@@ -32,6 +37,7 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
   width,
   height,
   onUnitClick,
+  draggedUnit,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -39,7 +45,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
   const unitContainerRef = useRef<Container | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // Initialize PixiJS
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
 
@@ -67,7 +72,7 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
 
         const unitContainer = new Container();
         unitContainer.x = width / 2;
-        unitContainer.y = height / 2 - 50;
+        unitContainer.y = height / 2;
         app.stage.addChild(unitContainer);
         unitContainerRef.current = unitContainer;
 
@@ -88,7 +93,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
     };
   }, [width, height]);
 
-  // Update sprites when units change
   useEffect(() => {
     if (!isReady) return;
 
@@ -99,8 +103,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
     const currentSprites = spritesRef.current;
     const seenIds = new Set<string>();
 
-    console.log('Rendering units:', units.map(u => ({ id: u.id, name: u.card.name, x: u.gridX, y: u.gridY })));
-    
     units.forEach((unit) => {
       seenIds.add(unit.id);
 
@@ -109,10 +111,20 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
         const pos = gridToIso(unit.gridX, unit.gridY);
         sprite.x = pos.x;
         sprite.y = pos.y;
-        console.log('Updated position for', unit.card.name, 'to', pos);
+        
+        // Update cursor based on canMove
+        sprite.cursor = unit.canMove ? 'grab' : 'default';
+        sprite.eventMode = unit.canMove ? 'static' : 'none';
+        
+        // Visual feedback when dragging
+        if (draggedUnit === unit.id) {
+          sprite.alpha = 0.5;
+          sprite.scale.set(sprite.scale.x * 1.1);
+        } else {
+          sprite.alpha = 1;
+        }
       } else {
-        console.log('Creating sprite for', unit.card.name, 'at', unit.gridX, unit.gridY);
-        createUnitSprite(unit, container, currentSprites, onUnitClick);
+        createUnitSprite(unit, container, currentSprites, onUnitClick, draggedUnit);
       }
     });
 
@@ -123,7 +135,7 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
         currentSprites.delete(id);
       }
     });
-  }, [units, onUnitClick, isReady]);
+  }, [units, onUnitClick, isReady, draggedUnit]);
 
   return (
     <div
@@ -131,7 +143,7 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
       style={{
         position: 'absolute',
         inset: 0,
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         overflow: 'hidden',
       }}
     />
@@ -139,8 +151,8 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
 };
 
 function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
-  const offsetX = -(GRID_COLS * TILE_WIDTH) / 2;
-  const offsetY = -(GRID_ROWS * TILE_HEIGHT) / 2;
+  const offsetX = -(TOTAL_COLS * TILE_WIDTH) / 2;
+  const offsetY = -(TOTAL_ROWS * TILE_HEIGHT) / 2;
 
   return {
     x: offsetX + (gridX - gridY) * (TILE_WIDTH / 2),
@@ -152,7 +164,8 @@ async function createUnitSprite(
   unit: UnitSprite,
   container: Container,
   spritesMap: Map<string, Sprite | AnimatedSprite>,
-  onClick?: (unit: UnitSprite) => void
+  onClick?: (unit: UnitSprite) => void,
+  draggedUnit?: string | null
 ) {
   const size = unit.isHero ? 40 : 24;
   const color = unit.card.type === 'hero' ? 0xffaa44 : 0x4488ff;
@@ -162,21 +175,12 @@ async function createUnitSprite(
 
   try {
     const texturePath = `${window.location.origin}/sprites/${unit.card.id}-idle.png`;
-    console.log('Loading sprite sheet:', texturePath);
-    
-    const baseTexture = await Assets.load(texturePath).catch((err) => {
-      console.log('Sprite sheet load failed:', err);
-      return null;
-    });
+    const baseTexture = await Assets.load(texturePath).catch(() => null);
 
     if (baseTexture) {
-      console.log('Sprite sheet loaded for', unit.card.name);
-      
-      // Calculate frame dimensions
       const frameWidth = baseTexture.width / SHEET_COLS;
       const frameHeight = baseTexture.height / SHEET_ROWS;
       
-      // Create textures for each frame
       const frames: Texture[] = [];
       for (let row = 0; row < SHEET_ROWS; row++) {
         for (let col = 0; col < SHEET_COLS; col++) {
@@ -194,28 +198,21 @@ async function createUnitSprite(
         }
       }
       
-      // Create animated sprite
       animSprite = new AnimatedSprite(frames);
       animSprite.anchor.set(0.5, 1);
       
-      // Scale to target size (doubled for heroes)
-      const targetWidth = unit.isHero ? 120 : 32;
+      const targetWidth = unit.isHero ? 100 : 32;
       animSprite.scale.set(targetWidth / frameWidth);
       
-      // Animation settings
       animSprite.animationSpeed = 0.15;
       animSprite.loop = true;
       animSprite.play();
       
       sprite = animSprite;
-      
-      console.log('Created animated sprite with', frames.length, 'frames');
     } else {
-      console.log('Using placeholder for', unit.card.name);
       sprite = createPlaceholderSprite(size, color, unit.card.name);
     }
   } catch (err) {
-    console.error('Error creating sprite:', err);
     sprite = createPlaceholderSprite(size, color, unit.card.name);
   }
 
@@ -223,18 +220,27 @@ async function createUnitSprite(
   sprite.x = pos.x;
   sprite.y = pos.y;
 
-  sprite.eventMode = 'static';
-  sprite.cursor = 'pointer';
-  sprite.on('pointerdown', () => onClick?.(unit));
+  // Set cursor and interactivity based on canMove
+  sprite.cursor = unit.canMove ? 'grab' : 'default';
+  sprite.eventMode = unit.canMove ? 'static' : 'none';
+  
+  if (unit.canMove) {
+    sprite.on('pointerdown', () => onClick?.(unit));
+    
+    sprite.on('pointerover', () => {
+      sprite.scale.set(sprite.scale.x * 1.1);
+      sprite.alpha = 0.9;
+    });
+    sprite.on('pointerout', () => {
+      sprite.scale.set(sprite.scale.x / 1.1);
+      sprite.alpha = 1;
+    });
+  }
 
-  sprite.on('pointerover', () => {
-    sprite.scale.set(sprite.scale.x * 1.1, sprite.scale.y * 1.1);
-    sprite.alpha = 0.9;
-  });
-  sprite.on('pointerout', () => {
-    sprite.scale.set(sprite.scale.x / 1.1, sprite.scale.y / 1.1);
-    sprite.alpha = 1;
-  });
+  // Visual feedback when dragging
+  if (draggedUnit === unit.id) {
+    sprite.alpha = 0.5;
+  }
 
   const shadow = createShadow(size);
   shadow.x = pos.x;
