@@ -84,7 +84,6 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
         <HeroCard 
           hero={opponent.hero} 
           level={opponent.heroLevel}
-          position="top"
         />
         {/* Top Deck Piles */}
         <div style={styles.deckArea}>
@@ -157,7 +156,6 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
         <HeroCard 
           hero={currentPlayer.hero} 
           level={currentPlayer.heroLevel}
-          position="bottom"
           draggable
           onDragStart={(e) => handleDragStart(`${currentPlayer.hero.id}-1`, e)}
         />
@@ -175,12 +173,11 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
 interface HeroCardProps {
   hero: Card;
   level: number;
-  position: 'top' | 'bottom';
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
 }
 
-const HeroCard: React.FC<HeroCardProps> = ({ hero, level, position, draggable, onDragStart }) => {
+const HeroCard: React.FC<HeroCardProps> = ({ hero, level, draggable, onDragStart }) => {
 
   return (
     <div style={styles.heroCardContainer}>
