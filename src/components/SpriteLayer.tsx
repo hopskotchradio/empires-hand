@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Application, Sprite, Assets, Container, Texture } from 'pixi.js';
+import { Application, Sprite, Assets, Container, Texture, Rectangle, AnimatedSprite } from 'pixi.js';
 import { Card } from '../types';
 
 interface UnitSprite {
@@ -23,6 +23,10 @@ const TILE_HEIGHT = 24;
 const GRID_COLS = 14;
 const GRID_ROWS = 8;
 
+// Sprite sheet config
+const SHEET_COLS = 5;
+const SHEET_ROWS = 5;
+
 export const SpriteLayer: React.FC<SpriteLayerProps> = ({
   units,
   width,
@@ -31,7 +35,7 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
-  const spritesRef = useRef<Map<string, Sprite>>(new Map());
+  const spritesRef = useRef<Map<string, Sprite | AnimatedSprite>>(new Map());
   const unitContainerRef = useRef<Container | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -61,7 +65,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
         containerRef.current?.appendChild(app.canvas);
         appRef.current = app;
 
-        // Container for all units (centered)
         const unitContainer = new Container();
         unitContainer.x = width / 2;
         unitContainer.y = height / 2 - 50;
@@ -109,7 +112,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
       }
     });
 
-    // Remove sprites for units that no longer exist
     currentSprites.forEach((sprite, id) => {
       if (!seenIds.has(id)) {
         container.removeChild(sprite);
@@ -132,7 +134,6 @@ export const SpriteLayer: React.FC<SpriteLayerProps> = ({
   );
 };
 
-// Convert grid coordinates to isometric screen coordinates
 function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
   const offsetX = -(GRID_COLS * TILE_WIDTH) / 2;
   const offsetY = -(GRID_ROWS * TILE_HEIGHT) / 2;
@@ -143,32 +144,68 @@ function gridToIso(gridX: number, gridY: number): { x: number; y: number } {
   };
 }
 
-// Create a unit sprite
 async function createUnitSprite(
   unit: UnitSprite,
   container: Container,
-  spritesMap: Map<string, Sprite>,
+  spritesMap: Map<string, Sprite | AnimatedSprite>,
   onClick?: (unit: UnitSprite) => void
 ) {
   const size = unit.isHero ? 40 : 24;
   const color = unit.card.type === 'hero' ? 0xffaa44 : 0x4488ff;
 
-  let sprite: Sprite;
+  let sprite: Sprite | AnimatedSprite;
+  let animSprite: AnimatedSprite | null = null;
 
   try {
     const texturePath = `${window.location.origin}/sprites/${unit.card.id}-idle.png`;
-    console.log('Loading texture:', texturePath);
-    const texture = await Assets.load(texturePath).catch((err) => {
-      console.log('Texture load failed:', err);
+    console.log('Loading sprite sheet:', texturePath);
+    
+    const baseTexture = await Assets.load(texturePath).catch((err) => {
+      console.log('Sprite sheet load failed:', err);
       return null;
     });
 
-    if (texture) {
-      console.log('Texture loaded for', unit.card.name);
-      sprite = new Sprite(texture);
-      sprite.anchor.set(0.5, 1);
+    if (baseTexture) {
+      console.log('Sprite sheet loaded for', unit.card.name);
+      
+      // Calculate frame dimensions
+      const frameWidth = baseTexture.width / SHEET_COLS;
+      const frameHeight = baseTexture.height / SHEET_ROWS;
+      
+      // Create textures for each frame
+      const frames: Texture[] = [];
+      for (let row = 0; row < SHEET_ROWS; row++) {
+        for (let col = 0; col < SHEET_COLS; col++) {
+          const rect = new Rectangle(
+            col * frameWidth,
+            row * frameHeight,
+            frameWidth,
+            frameHeight
+          );
+          const frameTexture = new Texture({
+            source: baseTexture.source,
+            frame: rect,
+          });
+          frames.push(frameTexture);
+        }
+      }
+      
+      // Create animated sprite
+      animSprite = new AnimatedSprite(frames);
+      animSprite.anchor.set(0.5, 1);
+      
+      // Scale to target size
       const targetWidth = unit.isHero ? 60 : 32;
-      sprite.scale.set(targetWidth / sprite.width);
+      animSprite.scale.set(targetWidth / frameWidth);
+      
+      // Animation settings
+      animSprite.animationSpeed = 0.15;
+      animSprite.loop = true;
+      animSprite.play();
+      
+      sprite = animSprite;
+      
+      console.log('Created animated sprite with', frames.length, 'frames');
     } else {
       console.log('Using placeholder for', unit.card.name);
       sprite = createPlaceholderSprite(size, color, unit.card.name);
@@ -204,7 +241,6 @@ async function createUnitSprite(
   spritesMap.set(unit.id, sprite);
 }
 
-// Create a placeholder colored sprite
 function createPlaceholderSprite(size: number, color: number, label: string): Sprite {
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -233,7 +269,6 @@ function createPlaceholderSprite(size: number, color: number, label: string): Sp
   return sprite;
 }
 
-// Create a simple shadow
 function createShadow(size: number): Sprite {
   const canvas = document.createElement('canvas');
   canvas.width = size;
