@@ -21,8 +21,8 @@ export const Board: React.FC<BoardProps> = ({ gameState, currentPlayerId }) => {
     {
       id: 'zeus-1',
       card: { ...currentPlayer.hero, id: 'zeus' },
-      gridX: 3,
-      gridY: 6,
+      gridX: 7,
+      gridY: 4,
       isHero: true,
     },
     {
