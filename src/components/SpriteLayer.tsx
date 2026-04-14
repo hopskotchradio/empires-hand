@@ -19,11 +19,11 @@ interface SpriteLayerProps {
   draggedUnit?: string | null;
 }
 
-// Grid config: 3x3 Fog | 6x6 Grid | 3x3 Fog = 12x6
-const FOG_SIZE = 3;
-const GRID_SIZE = 6;
-const TOTAL_COLS = FOG_SIZE + GRID_SIZE + FOG_SIZE; // 12
-const TOTAL_ROWS = GRID_SIZE; // 6
+// Grid config: 3 fog | 5x5 Grid | 3 fog = 11x5
+const FOG_COLS = 3;
+const GRID_SIZE = 5;
+const TOTAL_COLS = FOG_COLS + GRID_SIZE + FOG_COLS; // 11
+const TOTAL_ROWS = GRID_SIZE; // 5
 
 const TILE_SIZE = 28; // Compact square cells for desktop
 
